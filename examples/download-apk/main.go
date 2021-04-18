@@ -1,11 +1,12 @@
 package main
 
 import (
+	"io"
+	"log"
+	"os"
+
 	"github.com/jarijaas/go-gplayapi/pkg/auth"
 	"github.com/jarijaas/go-gplayapi/pkg/playstore"
-	log "github.com/sirupsen/logrus"
-	"io"
-	"os"
 )
 
 func main()  {
@@ -25,7 +26,7 @@ func main()  {
 		log.Fatal(err)
 	}
 
-	log.Infof("Download size: %d bytes", downloadInfo.Size)
+	log.Printf("Download size: %d bytes", downloadInfo.Size)
 
 	f, err := os.Create("./whatsapp.apk")
 	if err != nil {

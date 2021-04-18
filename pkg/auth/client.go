@@ -5,16 +5,16 @@ package auth
 import (
 	"bytes"
 	"fmt"
-	"github.com/golang/protobuf/proto"
-	"github.com/jarijaas/go-gplayapi/pkg/common"
-	"github.com/jarijaas/go-gplayapi/pkg/keyring"
-	"github.com/jarijaas/go-gplayapi/pkg/playstore/pb"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/jarijaas/go-gplayapi/pkg/common"
+	"github.com/jarijaas/go-gplayapi/pkg/keyring"
+	"github.com/jarijaas/go-gplayapi/pkg/playstore/pb"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -42,7 +42,6 @@ func CreatePlaystoreAuthClient(config *Config) (*Client, error) {
 	if config.GsfId == "" && config.AuthSubToken == "" {
 		gsfId, authSub, err := keyring.GetGoogleTokens()
 		if err == nil && gsfId != "" && authSub != "" {
-			log.Tracef("Found GSIF %s and authSub %s tokens from keyring", gsfId, authSub)
 			config.GsfId = gsfId
 			config.AuthSubToken = authSub
 		}
@@ -125,9 +124,6 @@ func (client *Client) getGsfId() (string, error) {
 			OtaInstalled:   boolP(true),
 		},
 		LastCheckinMsec: &lastCheckinMsec,
-		Event:           nil,
-		Stat:            nil,
-		RequestedGroup:  nil,
 		CellOperator:    &cellOperator,
 		SimOperator:     &simOperator,
 		Roaming:         &roaming,
@@ -135,23 +131,10 @@ func (client *Client) getGsfId() (string, error) {
 	}
 
 	checkinReq := &pb.AndroidCheckinRequest{
-		Imei:                nil,
-		Id:                  nil,
-		Digest:              nil,
 		Checkin:             &checkin,
-		DesiredBuild:        nil,
 		Locale:              &locale,
-		LoggingId:           nil,
-		MarketCheckin:       nil,
-		MacAddr:             nil,
-		Meid:                nil,
-		AccountCookie:       nil,
 		TimeZone:            &timezone,
-		SecurityToken:       nil,
 		Version:             &version,
-		OtaCert:             nil,
-		SerialNumber:        nil,
-		Esn:                 nil,
 		DeviceConfiguration: &pb.DeviceConfigurationProto{
 			TouchScreen:            intP(3),
 			Keyboard:               intP(2),
@@ -172,10 +155,7 @@ func (client *Client) getGsfId() (string, error) {
 			DeviceClass:            nil,
 			MaxApkDownloadSizeMb:   intP(100 * 100),
 		},
-		MacAddrType:         nil,
 		Fragment:            &fragment,
-		UserName:            nil,
-		UserSerialNumber:    nil,
 	}
 
 
@@ -218,8 +198,6 @@ func (client *Client) getGsfId() (string, error) {
 
 
 func (client *Client) Authenticate() error {
-	log.Debugf("Authenticate")
-
 	authType := client.getAuthType()
 	if authType == Unknown {
 		return fmt.Errorf(
@@ -243,8 +221,6 @@ func (client *Client) Authenticate() error {
 		if err != nil {
 			return err
 		}
-
-		log.Infof("Got GsfId and AuthSubToken, saving these to keyring")
 
 		err = keyring.SaveToken(keyring.GSFID, client.config.GsfId)
 		if err != nil {

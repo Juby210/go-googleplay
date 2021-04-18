@@ -5,11 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/golang/protobuf/proto"
-	"github.com/jarijaas/go-gplayapi/pkg/auth"
-	"github.com/jarijaas/go-gplayapi/pkg/common"
-	"github.com/jarijaas/go-gplayapi/pkg/playstore/pb"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -17,6 +12,12 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"time"
+
+	"github.com/jarijaas/go-gplayapi/pkg/auth"
+	"github.com/jarijaas/go-gplayapi/pkg/common"
+	"github.com/jarijaas/go-gplayapi/pkg/playstore/pb"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -26,6 +27,8 @@ const (
 	DetailsUrl  = FDFEUrl + "details"
 	PurchaseUrl = FDFEUrl + "purchase"
 )
+
+var httpClient = &http.Client{Timeout: 5 * time.Second}
 
 type Client struct {
 	authClient *auth.Client
@@ -62,13 +65,6 @@ func (client *Client) send(url string, bodyParams *url.Values) (*pb.ResponseWrap
 		body = bytes.NewBufferString(bodyParams.Encode())
 	}
 
-	log.Debugf("%s %s", method, url)
-
-	httpClient, err := createHTTPClient()
-	if err != nil {
-		return nil, err
-	}
-
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
@@ -82,7 +78,7 @@ func (client *Client) send(url string, bodyParams *url.Values) (*pb.ResponseWrap
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
 
-	reqRes, err := httpDoRetryOnNotFound(httpClient, req)
+	reqRes, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -153,8 +149,6 @@ In order to download the app, the app is "purchased" first
 If `versionCode` is zero, get delivery data for the latest version
 */
 func (client *Client) GetAppDeliveryData(packageName string, versionCode int) (*pb.AndroidAppDeliveryData, error) {
-	log.Debugf("Get delivery data for %s", packageName)
-
 	// Get latest version code
 	if versionCode == 0 {
 		doc, err := client.GetDetails(packageName)
@@ -167,8 +161,6 @@ func (client *Client) GetAppDeliveryData(packageName string, versionCode int) (*
 				"Is the gsfId correct, does the app support the specified device config?")
 		}
 		versionCode = int(*doc.Details.AppDetails.VersionCode)
-
-		log.Debugf("Latest %s version code: %d", packageName, versionCode)
 	}
 
 	buyRes, err := client.Purchase(packageName, versionCode)
@@ -206,9 +198,6 @@ func (client *Client) GetAppDownloadInfo(packageName string, versionCode int) (*
 	}
 
 	downloadUrl := *deliveryData.DownloadUrl
-
-	log.Debugf("%s Sha1: %s, Sha256: %s (b64 encoded)",
-		packageName, *deliveryData.Sha1, *deliveryData.Sha256)
 
 	sha1Checksum, err := base64.RawURLEncoding.DecodeString(*deliveryData.Sha1)
 	if err != nil {
@@ -262,8 +251,6 @@ func (client *Client) Download(packageName string, versionCode int) (io.ReadClos
 	if err != nil {
 		return nil, nil, err
 	}
-
-	log.Debugf("Downloading %s from %s", packageName, info.Url)
 
 	reader, err := DownloadVerifySha256(info.Url, info.Size, info.Sha256)
 	return reader, info,err

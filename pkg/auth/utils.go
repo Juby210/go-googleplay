@@ -8,13 +8,13 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
-	xhttp "github.com/Jarijaas/go-tls-exposed/http"
-	xtls "github.com/Jarijaas/go-tls-exposed/tls"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"math/big"
 	"net/url"
 	"strings"
+
+	xhttp "github.com/Jarijaas/go-tls-exposed/http"
+	xtls "github.com/Jarijaas/go-tls-exposed/tls"
 )
 
 const GooglePubkey = "AAAAgMom/1a/v0lblO2Ubrt60J2gcuXSljGFQXgcyZWveWLEwo6prwgi3iJIZdodyhKZQrNWp5nKJ3srRXcUW+F1BD3baEVGcmEgqaLZUNBjm057pKRI16kB0YppeGx5qIQ5QjKzsR8ETQbKLNWgRY0QRNVz34kMJR3P/LgHax/6rmf5AAAAAwEAAQ=="
@@ -176,7 +176,6 @@ func getSubToken(masterToken string) (string, error) {
 		return "", fmt.Errorf("google auth API returned error: %s", errorDesc)
 	}
 
-	log.Debugf("Round token results: %v", kvs)
 	return kvs["auth"], nil
 }
 
@@ -215,7 +214,6 @@ func getPlayStoreAuthSubToken(email string, encryptedPasswd string) (string, err
 
 	errorDesc, has := kvs["error"]
 	if has {
-		log.Debugf("Error response contents: %v", kvs)
 		return "", fmt.Errorf("google auth API returned error: %s, info: %s", errorDesc, kvs["info"])
 	}
 
@@ -224,7 +222,6 @@ func getPlayStoreAuthSubToken(email string, encryptedPasswd string) (string, err
 		return "", fmt.Errorf("AuhSubToken response does not have token: %v", kvs)
 	}
 
-	log.Debugf("Got master token: %s", masterToken)
 	return getSubToken(masterToken)
 }
 
