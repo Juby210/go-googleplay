@@ -36,10 +36,11 @@ type Config struct {
 	Password string
 	GsfId string
 	AuthSubToken string
+	KeyringEnabled bool
 }
 
 func CreatePlaystoreAuthClient(config *Config) (*Client, error) {
-	if config.GsfId == "" && config.AuthSubToken == "" {
+	if config.GsfId == "" && config.AuthSubToken == "" && config.KeyringEnabled {
 		gsfId, authSub, err := keyring.GetGoogleTokens()
 		if err == nil && gsfId != "" && authSub != "" {
 			config.GsfId = gsfId
@@ -222,14 +223,16 @@ func (client *Client) Authenticate() error {
 			return err
 		}
 
-		err = keyring.SaveToken(keyring.GSFID, client.config.GsfId)
-		if err != nil {
-			return err
-		}
+		if client.config.KeyringEnabled {
+			err = keyring.SaveToken(keyring.GSFID, client.config.GsfId)
+			if err != nil {
+				return err
+			}
 
-		err = keyring.SaveToken(keyring.AuthSubToken, client.config.AuthSubToken)
-		if err != nil {
-			return err
+			err = keyring.SaveToken(keyring.AuthSubToken, client.config.AuthSubToken)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
